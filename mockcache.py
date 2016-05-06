@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: ascii -*-
+
 # Copyright (c) 2016 Hong Minhee <http://hongminhee.org/>
 # Copyright (c) 2010 Lunant <http://lunant.net/>
 #
@@ -49,88 +52,105 @@ True
 1
 >>> mc.get("a")
 '1234'
->>> mc
-<mockcache.Client {'a': ('1234', None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+('1234', None)
 >>> mc.add("a", "1111")
 0
 >>> mc.get("a")
 '1234'
->>> mc
-<mockcache.Client {'a': ('1234', None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+('1234', None)
 >>> mc.replace("a", "2222")
 1
 >>> mc.get("a")
 '2222'
->>> mc
-<mockcache.Client {'a': ('2222', None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+('2222', None)
 >>> mc.append("a", "3")
 1
 >>> mc.get("a")
 '22223'
->>> mc
-<mockcache.Client {'a': ('22223', None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+('22223', None)
 >>> mc.prepend("a", "1")
 1
 >>> mc.get("a")
 '122223'
->>> mc
-<mockcache.Client {'a': ('122223', None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+('122223', None)
 >>> mc.incr("a")
 122224
 >>> mc.get("a")
 122224
->>> mc
-<mockcache.Client {'a': (122224, None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+(122224, None)
 >>> mc.incr("a", 10)
 122234
 >>> mc.get("a")
 122234
->>> mc
-<mockcache.Client {'a': (122234, None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+(122234, None)
 >>> mc.decr("a")
 122233
 >>> mc.get("a")
 122233
->>> mc
-<mockcache.Client {'a': (122233, None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+(122233, None)
 >>> mc.decr("a", 5)
 122228
 >>> mc.get("a")
 122228
->>> mc
-<mockcache.Client {'a': (122228, None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+(122228, None)
+>>> len(mc.dictionary)
+1
 >>> mc.replace("b", "value")
 0
 >>> mc.get("b")
 >>> mc.get("b") is None
 True
->>> mc
-<mockcache.Client {'a': (122228, None)}>
+>>> mc.dictionary['a'.encode('ascii')]
+(122228, None)
+>>> len(mc.dictionary)
+1
 >>> mc.add("b", "value", 5)
 1
 >>> mc.get("b")
 'value'
->>> mc  # doctest: +ELLIPSIS
-<mockcache.Client {'a': (122228, None), 'b': ('value', ...)}>
+>>> len(mc.dictionary)
+2
+>>> mc.dictionary['a'.encode('ascii')]
+(122228, None)
+>>> mc.dictionary['b'.encode('ascii')] # doctest: +ELLIPSIS
+('value', ...)
 >>> import time
 >>> time.sleep(6)
 >>> mc.get("b")
 >>> mc.get("b") is None
 True
->>> mc
-<mockcache.Client {'a': (122228, None)}>
+>>> len(mc.dictionary)
+1
+>>> mc.dictionary['a'.encode('ascii')]
+(122228, None)
 >>> mc.set("c", "value")
 1
->>> mc.get_multi(["a", "b", "c"])
-{'a': 122228, 'c': 'value'}
+>>> multi_result = mc.get_multi(["a", "b", "c"])
+>>> len(multi_result)
+2
+>>> multi_result['a'.encode('ascii')]
+122228
+>>> multi_result['c'.encode('ascii')]
+'value'
 >>> mc.set_multi({"a": 999, "b": 998, "c": 997}, key_prefix="pf_")
 []
 >>> mc.get("pf_a")
 999
 >>> multi_result = mc.get_multi(["b", "c"], key_prefix="pf_")
->>> multi_result["b"]
+>>> len(multi_result)
+2
+>>> multi_result["b".encode('ascii')]
 998
->>> multi_result["c"]
+>>> multi_result["c".encode('ascii')]
 997
 >>> mc.delete("a")
 1
@@ -144,10 +164,7 @@ Traceback (most recent call last):
 MockcachedKeyNoneError: Key is None
 >>> mc.set(123, 123) #doctest: +IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
-MockcachedKeyTypeError: Key must be str()'s
->>> mc.set(u"a", 123) #doctest: +IGNORE_EXCEPTION_DETAIL
-Traceback (most recent call last):
-MockcachedKeyTypeError: Key must be str()'s, not unicode.
+MockcachedKeyTypeError: Key must be bytes()'s
 >>> mc.set("a" * 251, 123) #doctest: +IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
 MockcachedKeyLengthError: Key length is > ...
@@ -156,12 +173,17 @@ MockcachedKeyLengthError: Key length is > ...
 
 from __future__ import absolute_import
 from __future__ import print_function
-from __future__ import unicode_literals
 from __future__ import division
+# breaks python 2 tests
+# from __future__ import unicode_literals
 
 import datetime
 import copy
 
+try:
+    unicode
+except NameError:
+    unicode = None.__class__
 
 __author__ = "Hong Minhee <http://hongminhee.org/>"
 __maintainer__ = __author__
@@ -214,6 +236,7 @@ class Client(object):
 
     def delete(self, key, time=0):
         """Deletes the `key` from the dictionary."""
+        key = check_key(key)
         if key in self.dictionary:
             if int(time) < 1:
                 del self.dictionary[key]
@@ -223,6 +246,7 @@ class Client(object):
 
     def incr(self, key, delta=1):
         """Increments an integer by the `key`."""
+        key = check_key(key)
         try:
             value, exp = self.dictionary[key]
         except KeyError:
@@ -234,6 +258,7 @@ class Client(object):
 
     def decr(self, key, delta=1):
         """Decrements an integer by the `key`."""
+        key = check_key(key)
         return self.incr(key, -delta)
 
     def append(self, key, val):
@@ -241,6 +266,7 @@ class Client(object):
         It works only when there is the key already.
 
         """
+        key = check_key(key)
         try:
             self.dictionary[key] = str(self.dictionary[key][0]) + val, \
                                    self.dictionary[key][1]
@@ -254,6 +280,7 @@ class Client(object):
         It works only when there is the key already.
 
         """
+        key = check_key(key)
         try:
             self.dictionary[key] = val + str(self.dictionary[key][0]), \
                                    self.dictionary[key][1]
@@ -267,6 +294,7 @@ class Client(object):
         but it stores the value only when the `key` doesn't exist already.
 
         """
+        key = check_key(key)
         if key in self.dictionary:
             return 0
         return self.set(key, val, time)
@@ -276,13 +304,14 @@ class Client(object):
         but it store the value only when the `key` already exists.
 
         """
+        key = check_key(key)
         if key not in self.dictionary:
             return 0
         return self.set(key, val, time)
 
     def set(self, key, val, time=0):
         """Sets the `key` with `val`."""
-        check_key(key)
+        key = check_key(key)
         if not time:
             time = None
         elif time < 60 * 60 * 24 * 30:
@@ -295,13 +324,19 @@ class Client(object):
     def set_multi(self, mapping, time=0, key_prefix=b''):
         """Sets all the key-value pairs in `mapping`. If `key_prefix` is
         given, it is prepended to all keys in `mapping`."""
+        if not isinstance(key_prefix, bytes):
+            try:
+                key_prefix = key_prefix.encode('ascii')
+            except Exception:
+                key_prefix = b''
         for key, value in mapping.items():
-            self.set(b'{0}{1}'.format(key_prefix, key), value, time)
+            key = check_key(key)
+            self.set(b''.join((key_prefix, key)), value, time)
         return []
 
     def get(self, key):
         """Retrieves a value of the `key` from the internal dictionary."""
-        check_key(key)
+        key = check_key(key)
         try:
             val, exptime = self.dictionary[key]
         except KeyError:
@@ -317,13 +352,19 @@ class Client(object):
         dictionary. If `key_prefix` is given, it is prepended to all
         keys before retrieving them.
         """
+        if not isinstance(key_prefix, bytes):
+            try:
+                key_prefix = key_prefix.encode('ascii')
+            except Exception:
+                key_prefix = b''
         dictionary = self.dictionary
 
-        prefixed_keys = [(key, b'{0}{1}'.format(key_prefix, key))
-                         for key in keys]
-        pairs = ((key, self.dictionary[prefixed])
-                  for (key, prefixed) in prefixed_keys
-                  if prefixed in dictionary)
+        pairs = []
+        for key in keys:
+            key = check_key(key)
+            prefixed_key = b''.join((key_prefix, key))
+            if prefixed_key in dictionary:
+                pairs.append((key, self.dictionary[prefixed_key]))
         now = datetime.datetime.now
         return dict((key, copy.deepcopy(value)) for key, (value, exp) in pairs
                                                 if not exp or exp > now())
@@ -334,6 +375,7 @@ class Client(object):
         """
         result = True
         for key in keys:
+            key = check_key(key)
             result = result and self.delete(key)
         return result
 
@@ -349,6 +391,10 @@ class Client(object):
         return len(self.dictionary)
 
     def __contains__(self, key):
+        try:
+            key = check_key(key)
+        except MockcachedKeyError:
+            pass
         return key in self.dictionary
 
 
@@ -362,14 +408,25 @@ def check_key(key, key_extra_len=0):
     if type(key) == tuple:
         key = key[1]
     if not key:
-        raise Client.MockcachedKeyNoneError("Key is None")
-    if not isinstance(key, str):
-        raise Client.MockcachedKeyTypeError("Key must be str()'s")
+        raise Client.MockcachedKeyNoneError('Key is None')
+
+    if isinstance(key, unicode):
+        raise Client.MockcachedKeyTypeError(
+            "Key must be bytes()'s, not unicode")
+    if not isinstance(key, bytes):
+        try:
+            key = key.encode('ascii')
+        except Exception:
+            raise Client.MockcachedKeyTypeError(
+                'Key must be encodable to ascii')
 
     if len(key) + key_extra_len > SERVER_MAX_KEY_LENGTH:
-         raise Client.MockcachedKeyLengthError("Key length is > %s" % \
+        raise Client.MockcachedKeyLengthError("Key length is > %s" % \
                                                  SERVER_MAX_KEY_LENGTH)
     for char in key:
-        if ord(char) < 33 or ord(char) == 127:
+        if isinstance(char, str):
+            char = ord(char)
+        if char < 33 or char == 127:
             raise Client.MockcachedKeyCharacterError("Control characters not "
                                                      "allowed")
+    return key
