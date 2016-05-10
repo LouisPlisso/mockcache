@@ -52,55 +52,55 @@ True
 1
 >>> mc.get("a")
 '1234'
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 ('1234', None)
 >>> mc.add("a", "1111")
 0
 >>> mc.get("a")
 '1234'
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 ('1234', None)
 >>> mc.replace("a", "2222")
 1
 >>> mc.get("a")
 '2222'
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 ('2222', None)
 >>> mc.append("a", "3")
 1
 >>> mc.get("a")
 '22223'
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 ('22223', None)
 >>> mc.prepend("a", "1")
 1
 >>> mc.get("a")
 '122223'
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 ('122223', None)
 >>> mc.incr("a")
 122224
 >>> mc.get("a")
 122224
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122224, None)
 >>> mc.incr("a", 10)
 122234
 >>> mc.get("a")
 122234
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122234, None)
 >>> mc.decr("a")
 122233
 >>> mc.get("a")
 122233
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122233, None)
 >>> mc.decr("a", 5)
 122228
 >>> mc.get("a")
 122228
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122228, None)
 >>> len(mc.dictionary)
 1
@@ -109,7 +109,7 @@ True
 >>> mc.get("b")
 >>> mc.get("b") is None
 True
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122228, None)
 >>> len(mc.dictionary)
 1
@@ -119,9 +119,9 @@ True
 'value'
 >>> len(mc.dictionary)
 2
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122228, None)
->>> mc.dictionary['b'.encode('ascii')] # doctest: +ELLIPSIS
+>>> mc.dictionary[b'b'] # doctest: +ELLIPSIS
 ('value', ...)
 >>> import time
 >>> time.sleep(6)
@@ -130,16 +130,16 @@ True
 True
 >>> len(mc.dictionary)
 1
->>> mc.dictionary['a'.encode('ascii')]
+>>> mc.dictionary[b'a']
 (122228, None)
 >>> mc.set("c", "value")
 1
 >>> multi_result = mc.get_multi(["a", "b", "c"])
 >>> len(multi_result)
 2
->>> multi_result['a'.encode('ascii')]
+>>> multi_result[b'a']
 122228
->>> multi_result['c'.encode('ascii')]
+>>> multi_result[b'c']
 'value'
 >>> mc.set_multi({"a": 999, "b": 998, "c": 997}, key_prefix="pf_")
 []
@@ -148,9 +148,9 @@ True
 >>> multi_result = mc.get_multi(["b", "c"], key_prefix="pf_")
 >>> len(multi_result)
 2
->>> multi_result["b".encode('ascii')]
+>>> multi_result[b"b"]
 998
->>> multi_result["c".encode('ascii')]
+>>> multi_result[b"c"]
 997
 >>> mc.delete("a")
 1
